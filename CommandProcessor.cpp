@@ -6,13 +6,13 @@ CommandProcessor::CommandProcessor()
 	commands["cls"] = [&](const vector<string>&) {system("cls"); };
 	commands["new"] = [&](const vector<string>& args)
 	{
-		if (check_arg_number(args, 2))
-			create_new_box(args[0], args[1]);
+		if (check_arg_number(args, 1))
+			create_new_box(args[0]);
 	};
 	commands["open"] = [&](const vector<string>& args)
 	{
-		if (check_arg_number(args, 2))
-			open_box(args[0], args[1]);
+		if (check_arg_number(args, 3))
+			open_box(args[0],args[1],args[2]);
 	};
 	commands["md"] = [&](const vector<string>& args)
 	{
@@ -26,7 +26,6 @@ CommandProcessor::CommandProcessor()
 }
 CommandProcessor::~CommandProcessor()
 {
-	if (box != nullptr)delete box;
 }
 void CommandProcessor::process_command(const pair <string, vector<string>>& command)
 {
@@ -43,10 +42,48 @@ void CommandProcessor::error(ErrorType type)
 		cout << "command is not defined!";
 	}
 }
-void CommandProcessor::create_new_box(const string& dir, const string& key)
+void CommandProcessor::create_new_box(const string& dir)
 {
+	if (!fs::exists(dir))
+	{	
+		using namespace Encryption;
+		box["box"] = nullptr;
+		ofstream file(dir);
+
+		AutoSeededRandomPool prng;
+
+		SecByteBlock key(AES::DEFAULT_KEYLENGTH);
+		SecByteBlock iv(AES::BLOCKSIZE);
+		prng.GenerateBlock(key, key.size());
+		prng.GenerateBlock(iv, iv.size());
+		
+		std::string iv_converted(reinterpret_cast<const char*>(iv.data()), iv.size());
+		std::string key_converted(reinterpret_cast<const char*>(key.data()), key.size());
+		cout << "Remember next data!" << endl;
+		cout << "key:" << key_converted << endl;
+		cout << "iv:" << iv_converted << endl;
+		cout << "-----------------" << endl;
+		cout << "do you want to save encryption data in file?(y/n)";
+		char choice;
+		cin >> choice;
+		if (choice == 'y')
+		{
+			string path;
+			cout << "enter path:";
+			cin >> path;
+
+			ofstream data(path,ios::binary);
+			data << key << " " << iv;
+			data.close();
+			cout << path << " is written!" << endl;
+		}
+
+		file << Encryption::encrypt(make_pair(key,iv),box.dump().c_str());
+		cout << dir << " is created sucessfully!" << endl;
+
+	}
 }
-void CommandProcessor::open_box(const string& dir, const string& key)
+void CommandProcessor::open_box(const string& dir, const string& key, const string& iv)
 {
 
 }

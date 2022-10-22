@@ -8,6 +8,7 @@
 #include<filesystem>
 #include<fstream>
 #include"json.hpp"
+#include"encryption/Encryption.h"
 using namespace std;
 namespace fs = std::filesystem;
 using json = nlohmann::json;
@@ -17,14 +18,14 @@ class CommandProcessor
 private:
 	map<string, function<void(const vector<string>&)>> commands;
 	string curr_box;
-	json* box = nullptr;
+	json box;
 	enum class ErrorType
 	{
 		NotDefinedCommand
 	};
 	void error(ErrorType type);
-	void create_new_box(const string& dir, const string& key);
-	void open_box(const string& dir, const string& key);
+	void create_new_box(const string& dir);
+	void open_box(const string& dir, const string& key, const string& iv);
 	void make_directory(const string& dir_name, const vector<string>& files);
 	void show_all_directories();
 
