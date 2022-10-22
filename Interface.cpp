@@ -26,8 +26,10 @@ void Interface::run()
 {
     while (true)
     {
-        cout << ">>";
+        cout <<cmdp.get_cur_box()<< ">>";
         auto input = get_user_input();
+        if (input.empty())continue;
+
         auto parsed = parse(input);
         cmdp.process_command(parsed);
         cout << endl;
