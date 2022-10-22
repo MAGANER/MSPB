@@ -2,7 +2,7 @@
 
 CommandProcessor::CommandProcessor()
 {
-	commands["q"] = [&](const vector<string>&) { exit(-1); };
+	commands["q"] = [&](const vector<string>&) { save(); exit(-1); };
 	commands["cls"] = [&](const vector<string>&) {system("cls"); };
 	commands["new"] = [&](const vector<string>& args)
 	{
@@ -17,7 +17,7 @@ CommandProcessor::CommandProcessor()
 	commands["md"] = [&](const vector<string>& args)
 	{
 		if (!args.empty())
-			make_directory(args[0],args);
+			make_directory(args[0],slice(args,1,args.size()));
 	};
 	commands["ls"] = [&](const vector<string>& args)
 	{
@@ -85,8 +85,12 @@ void CommandProcessor::create_new_box(const string& dir)
 }
 void CommandProcessor::open_box(const string& dir, const string& key, const string& iv)
 {
+	this->key = key;
+	this->iv = iv;
+	
 	Encryption::SecByteBlock _key = Encryption::convert_to_bytes(key);
 	Encryption::SecByteBlock _iv = Encryption::convert_to_bytes(iv);
+
 	if (fs::exists(dir))
 	{
 		ifstream box_file(dir);
@@ -111,15 +115,27 @@ string CommandProcessor::get_cur_box()const
 {
 	return curr_box;
 }
+vector<string> CommandProcessor::slice(const vector<string>& vec, size_t beg, size_t end)
+{
+	vector<string> res;
+	for (size_t n = beg; n < end; n++)res.push_back(vec[n]);
+	return res;
+}
 void CommandProcessor::make_directory(const string& dir_name, const vector<string>& files)
 {
-
-}
-bool CommandProcessor::check_table_exists(const string& name)
-{
-
+	box[dir_name] = nullptr;
 }
 void CommandProcessor::show_all_directories()
 {
 
+}
+void CommandProcessor::save()
+{
+	auto key_converted = Encryption::convert_to_bytes(key);
+	auto iv_converted = Encryption::convert_to_bytes(iv);
+
+	ofstream data(curr_box);
+	string encrypted = Encryption::encrypt(make_pair(key_converted, iv_converted), box.dump().c_str());
+	data << encrypted;
+	data.close();
 }
