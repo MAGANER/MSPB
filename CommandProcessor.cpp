@@ -57,8 +57,8 @@ void CommandProcessor::create_new_box(const string& dir)
 		prng.GenerateBlock(key, key.size());
 		prng.GenerateBlock(iv, iv.size());
 		
-		std::string iv_converted(reinterpret_cast<const char*>(iv.data()), iv.size());
-		std::string key_converted(reinterpret_cast<const char*>(key.data()), key.size());
+		auto key_converted = Encryption::convert_bytes(key);
+		auto iv_converted = Encryption::convert_bytes(iv);
 		cout << "Remember next data!" << endl;
 		cout << "key:" << key_converted << endl;
 		cout << "iv:" << iv_converted << endl;
@@ -73,7 +73,7 @@ void CommandProcessor::create_new_box(const string& dir)
 			cin >> path;
 
 			ofstream data(path,ios::binary);
-			data << key << " " << iv;
+			data << key_converted << " " << iv_converted;
 			data.close();
 			cout << path << " is written!" << endl;
 		}
@@ -85,7 +85,18 @@ void CommandProcessor::create_new_box(const string& dir)
 }
 void CommandProcessor::open_box(const string& dir, const string& key, const string& iv)
 {
+	Encryption::SecByteBlock _key = Encryption::convert_to_bytes(key);
+	Encryption::SecByteBlock _iv = Encryption::convert_to_bytes(iv);
+	if (fs::exists(dir))
+	{
+		ifstream box_file(dir);
+		string encrypted_box;
+		box_file >> encrypted_box;
 
+		auto decrypted_box = Encryption::decrypt(make_pair(_key, _iv), encrypted_box);
+		curr_box = dir;
+		box = json::parse(decrypted_box);
+	}
 }
 bool CommandProcessor::check_arg_number(const vector<string>& args, int right_number)
 {
