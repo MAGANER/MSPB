@@ -22,5 +22,7 @@ namespace Encryption
 	typedef pair<SecByteBlock, SecByteBlock> key_iv;
 	string encrypt(const key_iv& key_iv, const string& text);
 	string decrypt(const key_iv& key_iv, const string& cipher);
-	
+
+	string convert_bytes(const SecByteBlock& bytes);
+	SecByteBlock convert_to_bytes(const string& key);
 };
