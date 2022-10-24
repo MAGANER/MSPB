@@ -1,4 +1,5 @@
 #include "CommandProcessor.h"
+#define SAY_TO_OPEN_BOX cout << "you should open box first!";
 
 CommandProcessor::CommandProcessor()
 {
@@ -20,14 +21,42 @@ CommandProcessor::CommandProcessor()
 	};
 	commands["md"] = [&](const vector<string>& args)
 	{
-		if (!args.empty())
-			make_directory(args[0], slice(args, 1, args.size()));
-		else
-			make_directory(args[0], vector<string>());
+		if (!curr_box.empty())
+		{
+			if (!args.empty())
+				make_directory(args[0], slice(args, 1, args.size()));
+			else
+				make_directory(args[0], vector<string>());
+		}
+		else SAY_TO_OPEN_BOX
 	};
 	commands["ls"] = [&](const vector<string>& args)
 	{
-		show_all_directories();
+		if (!curr_box.empty())
+		{
+			show_all_directories();
+		}
+		else SAY_TO_OPEN_BOX
+	};
+	commands["sdc"] = [&](const vector<string>& args)
+	{
+		if (!args.empty())
+		{
+			for (auto& arg : args)
+			{
+				if (box.find(arg) != box.end())
+				{
+					cout << "Content of " << arg << endl;
+					show_dir_content(arg);
+					cout << "-----------";
+					cout << endl;
+				}
+			}
+		}
+		else
+		{
+			cout << "error:no arguments!" << endl;
+		}
 	};
 }
 CommandProcessor::~CommandProcessor()
@@ -54,7 +83,7 @@ void CommandProcessor::create_new_box(const string& dir)
 	{	
 		using namespace Encryption;
 		box["box"] = nullptr;
-		ofstream file(dir);
+		ofstream file(dir,ios::binary);
 
 		AutoSeededRandomPool rnd;
 
@@ -88,6 +117,9 @@ void CommandProcessor::create_new_box(const string& dir)
 		file << Encryption::encrypt(make_pair(key,iv),box.dump().c_str());
 		cout << dir << " is created sucessfully!" << endl;
 
+
+		//clear current box, make it unusable
+		box = nullptr;
 	}
 }
 void CommandProcessor::open_box(const string& dir, const string& key, const string& iv)
@@ -154,6 +186,13 @@ vector<string> CommandProcessor::slice(const vector<string>& vec, size_t beg, si
 void CommandProcessor::make_directory(const string& dir_name, const vector<string>& files)
 {
 	box[dir_name] = nullptr;
+
+	auto _files = parse_files_names(files);
+	for (auto& f : _files)
+	{
+		load_file_to_dir(dir_name, f);
+	}
+	cout << dir_name << " is created sucessfully!";
 }
 void CommandProcessor::show_all_directories()
 {
@@ -165,8 +204,68 @@ void CommandProcessor::save()
 	auto key_converted = Encryption::convert_to_bytes(key);
 	auto iv_converted = Encryption::convert_to_bytes(iv);
 
-	ofstream data(curr_box,ios::binary);
+	ofstream data(curr_box, ios::binary);
+	cout << box.dump() << endl;
 	string encrypted = Encryption::encrypt(make_pair(key_converted, iv_converted), box.dump().c_str());
 	data << encrypted;
 	data.close();
+}
+vector<pair<string, string>> CommandProcessor::parse_files_names(const vector<string>& files)
+{
+	vector<pair<string, string>> result;
+
+	int counter = 0;
+	for (auto& f : files)
+	{
+		auto sep_pos = f.find(":");
+		if (sep_pos != string::npos)
+		{
+			auto name = f.substr(0, sep_pos);
+			auto file_path = f.substr(sep_pos + 1, f.size());
+			auto res = make_pair(name, file_path);
+			result.push_back(res);
+		}
+		else
+		{
+			auto res = make_pair(to_string(counter), f);
+			counter++;
+			result.push_back(res);
+		}
+	}
+	return result;
+}
+void CommandProcessor::load_file_to_dir(const string& dir, const  pair<string, string>& name_dir)
+{
+	box[dir][name_dir.first] = GetFileAsString(name_dir.second);
+}
+void CommandProcessor::show_dir_content(const string& dir_name)
+{
+	for (auto& f : box[dir_name].items())
+	{
+		cout << f.key() << endl;
+	}
+}
+
+string CommandProcessor::GetStreamAsString(const istream& in)
+{
+	stringstream out;
+	out << in.rdbuf();
+	return out.str();
+}
+string CommandProcessor::GetFileAsString(const string& filePath)
+{
+	ifstream stream;
+	try
+	{
+		// Set to throw on failure
+		stream.exceptions(fstream::failbit | fstream::badbit);
+		stream.open(filePath);
+	}
+	catch (system_error& error)
+	{
+		cerr << "Failed to open '" << filePath << "'\n" << error.code().message() << endl;
+		return "Open fail";
+	}
+
+	return GetStreamAsString(stream);
 }
