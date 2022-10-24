@@ -87,6 +87,7 @@ std::string Encryption::decrypt(const key_iv& key_iv, const string& cipher)
 	catch (const Exception& e)
 	{
 		cout << "AES::decryption:" << e.what();
-		return "-1";
+		exit(-1);
+		return "";
 	}
 }
