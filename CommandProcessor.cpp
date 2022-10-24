@@ -132,9 +132,11 @@ void CommandProcessor::open_box(const string& dir, const string& key, const stri
 
 	if (fs::exists(dir))
 	{
-		ifstream box_file(dir,ios::binary);
-		string encrypted_box;
-		box_file >> encrypted_box;
+		ifstream file(dir, ios::binary);
+		std::stringstream strStream;
+		strStream << file.rdbuf();
+		string encrypted_box = strStream.str();
+		file.close();
 
 		auto decrypted_box = Encryption::decrypt(make_pair(_key, _iv), encrypted_box);
 		curr_box = dir;
