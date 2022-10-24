@@ -29,6 +29,7 @@ private:
 	void error(ErrorType type);
 	void create_new_box(const string& dir);
 	void open_box(const string& dir, const string& key, const string& iv);
+	void open_box(const string& dir, const string& key_iv_file);
 	void make_directory(const string& dir_name, const vector<string>& files);
 	void show_all_directories();
 

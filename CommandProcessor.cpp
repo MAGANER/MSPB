@@ -11,13 +11,19 @@ CommandProcessor::CommandProcessor()
 	};
 	commands["open"] = [&](const vector<string>& args)
 	{
-		if (check_arg_number(args, 3))
-			open_box(args[0],args[1],args[2]);
+		if (args.size() == 3)
+			open_box(args[0], args[1], args[2]);
+		else if (args.size() == 2)
+			open_box(args[0], args[1]);
+		else
+			cout << "incorrect arguments!";
 	};
 	commands["md"] = [&](const vector<string>& args)
 	{
 		if (!args.empty())
-			make_directory(args[0],slice(args,1,args.size()));
+			make_directory(args[0], slice(args, 1, args.size()));
+		else
+			make_directory(args[0], vector<string>());
 	};
 	commands["ls"] = [&](const vector<string>& args)
 	{
@@ -50,12 +56,13 @@ void CommandProcessor::create_new_box(const string& dir)
 		box["box"] = nullptr;
 		ofstream file(dir);
 
-		AutoSeededRandomPool prng;
+		AutoSeededRandomPool rnd;
 
-		SecByteBlock key(AES::DEFAULT_KEYLENGTH);
+		SecByteBlock key(0x00, AES::DEFAULT_KEYLENGTH);
+		rnd.GenerateBlock(key, key.size());
+
 		SecByteBlock iv(AES::BLOCKSIZE);
-		prng.GenerateBlock(key, key.size());
-		prng.GenerateBlock(iv, iv.size());
+		rnd.GenerateBlock(iv, iv.size());
 		
 		auto key_converted = Encryption::convert_bytes(key);
 		auto iv_converted = Encryption::convert_bytes(iv);
@@ -72,8 +79,8 @@ void CommandProcessor::create_new_box(const string& dir)
 			cout << "enter path:";
 			cin >> path;
 
-			ofstream data(path,ios::binary);
-			data << key_converted << " " << iv_converted;
+			ofstream data(path);
+			data <<"key:"<< key_converted << '\n' <<" iv:"<< iv_converted;
 			data.close();
 			cout << path << " is written!" << endl;
 		}
@@ -93,13 +100,36 @@ void CommandProcessor::open_box(const string& dir, const string& key, const stri
 
 	if (fs::exists(dir))
 	{
-		ifstream box_file(dir);
+		ifstream box_file(dir,ios::binary);
 		string encrypted_box;
 		box_file >> encrypted_box;
 
 		auto decrypted_box = Encryption::decrypt(make_pair(_key, _iv), encrypted_box);
 		curr_box = dir;
 		box = json::parse(decrypted_box);
+	}
+}
+void CommandProcessor::open_box(const string& dir, const string& key_iv_file)
+{
+	if (fs::exists(dir))
+	{
+		ifstream key_iv(key_iv_file);
+		string key, iv;
+		key_iv >> key >> iv;
+
+		auto pos1 = key.find(':');
+		auto pos2 = iv.find(':');
+
+		if (pos1 == string::npos or pos2 == string::npos)
+		{
+			cout << "can not read " << key_iv_file<<"!";
+		}
+		else
+		{
+			key = key.substr(pos1+1, key.size());
+			iv = iv.substr(pos2+1, iv.size());
+			open_box(dir, key, iv);
+		}
 	}
 }
 bool CommandProcessor::check_arg_number(const vector<string>& args, int right_number)
@@ -127,14 +157,15 @@ void CommandProcessor::make_directory(const string& dir_name, const vector<strin
 }
 void CommandProcessor::show_all_directories()
 {
-
+	for (auto& el : box.items())
+		cout << el.key() << " ";
 }
 void CommandProcessor::save()
 {
 	auto key_converted = Encryption::convert_to_bytes(key);
 	auto iv_converted = Encryption::convert_to_bytes(iv);
 
-	ofstream data(curr_box);
+	ofstream data(curr_box,ios::binary);
 	string encrypted = Encryption::encrypt(make_pair(key_converted, iv_converted), box.dump().c_str());
 	data << encrypted;
 	data.close();
