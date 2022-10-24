@@ -6,9 +6,10 @@
 #include"rijndael.h"
 #include"osrng.h"
 #include"modes.h"
-#include "filters.h"
-#include "cryptlib.h"
+#include"filters.h"
+#include"cryptlib.h"
 #include"sha.h"
+#include"base64.h"
 #include<utility>
 #include<string>
 #include<vector>

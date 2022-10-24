@@ -40,54 +40,47 @@ CryptoPP::SecByteBlock Encryption::convert_to_bytes(const string& key)
 /////////////////
 std::string Encryption::encrypt(const key_iv& key_iv, const string& text)
 {
-	if (text.empty())return "";
-	try
-	{
-		CBC_Mode<CryptoPP::AES>::Encryption e;
-		e.SetKeyWithIV(key_iv.first, key_iv.first.size(), key_iv.second);
-
-		string _text = text;
-		//while ((_text.size() % 16) != 0)_text +=(char)0;
-
-		string cipher;
-		StringSource s(_text, true,
-			//new HexEncoder(
-			new StreamTransformationFilter(e,
-				new StringSink(cipher)
-			) // StreamTransformationFilter
-		//)
-		); // StringSource
-
-		return cipher;
+	std::string encrypt_str;
+	try {
+		// Initialize the encoder The mode selected here is CBC_Mode
+		CryptoPP::CBC_Mode<CryptoPP::AES>::Encryption cbc_encription(key_iv.first, key_iv.first.size(), key_iv.second);
+		// Set a stream format CryptoPP is a very useful module
+			CryptoPP::StreamTransformationFilter stf_encription(cbc_encription,
+				// Here the encrypted output stream is encoded in base64, if not needed, directly pass new CryptoPP::StringSink(encrypt_str)
+				new CryptoPP::Base64Encoder(new CryptoPP::StringSink(encrypt_str)),
+				// Fill mode is padding 0
+				CryptoPP::BlockPaddingSchemeDef::ZEROS_PADDING);
+		// put will pass the data that needs to be encoded
+		stf_encription.Put(reinterpret_cast<const unsigned char*>(text.c_str()), text.length() + 1);
+		stf_encription.MessageEnd();
 	}
-	catch (const Exception& e)
-	{
-		cout <<"AES::encryption:"<< e.what();
-		exit(-1);
+	catch (std::exception e) {
+		std::cout << e.what() << std::endl;
 	}
+	return encrypt_str;
 }
 std::string Encryption::decrypt(const key_iv& key_iv, const string& cipher)
 {
-	if (cipher.empty())return "";
-	try
-	{
-		CBC_Mode<CryptoPP::AES>::Decryption d;
-		d.SetKeyWithIV(key_iv.first, key_iv.first.size(), key_iv.second);
+	try {
+		// Limited ability, did not find the pre - processing interface of the input stream, here first do base64 decoding
+			std::string aes_encrypt_data;
+		CryptoPP::Base64Decoder decoder;
+		decoder.Attach(new CryptoPP::StringSink(aes_encrypt_data));
+		decoder.Put(reinterpret_cast<const unsigned char*>(cipher.c_str()), cipher.length());
+		decoder.MessageEnd();
 
-		string recovered;
-		StringSource s(cipher, true,
-			//new CryptoPP::HexDecoder(
-			new StreamTransformationFilter(d,
-				new StringSink(recovered)
-			) // StreamTransformationFilter
-		//)
-		); // StringSource
-		return recovered;
+		// There is nothing to say below, similar to AES encryption, get raw data
+		std::string decrypt_data;
+		CryptoPP::CBC_Mode<CryptoPP::AES>::Decryption cbc_description(key_iv.first, key_iv.first.size(), key_iv.second);
+		CryptoPP::StreamTransformationFilter stf_description(cbc_description,
+			new CryptoPP::StringSink(decrypt_data), CryptoPP::BlockPaddingSchemeDef::ZEROS_PADDING);
+		stf_description.Put(reinterpret_cast<const unsigned char*>(aes_encrypt_data.c_str())
+			, aes_encrypt_data.length());
+		stf_description.MessageEnd();
+		return decrypt_data;
 	}
-	catch (const Exception& e)
-	{
-		cout << "AES::decryption:" << e.what();
-		exit(-1);
+	catch (std::exception e) {
+		std::cout << e.what() << std::endl;
 		return "";
 	}
 }
