@@ -3,6 +3,7 @@
 
 CommandProcessor::CommandProcessor()
 {
+	//init all commands, available from terminal
 	commands["q"] = [&](const vector<string>&) { save(); exit(-1); };
 	commands["cls"] = [&](const vector<string>&) {system("cls"); };
 	commands["new"] = [&](const vector<string>& args)
@@ -86,6 +87,7 @@ CommandProcessor::~CommandProcessor()
 }
 void CommandProcessor::process_command(const pair <string, vector<string>>& command)
 {
+	//find it in hash map, if it's not found, say entered command doesn't exist
 	if (commands.end() != commands.find(command.first))
 	{
 		commands[command.first](command.second);
@@ -101,12 +103,15 @@ void CommandProcessor::error(ErrorType type)
 }
 void CommandProcessor::create_new_box(const string& dir)
 {
+	//dir where box will be created must not exist
 	if (!fs::exists(dir))
 	{	
 		using namespace Encryption;
 		box["box"] = nullptr;
 		ofstream file(dir,ios::binary);
 
+		//generate random key
+		//then it can be wrote in file
 		AutoSeededRandomPool rnd;
 
 		SecByteBlock key(0x00, AES::DEFAULT_KEYLENGTH);
@@ -152,6 +157,7 @@ void CommandProcessor::open_box(const string& dir, const string& key, const stri
 	Encryption::SecByteBlock _key = Encryption::convert_to_bytes(key);
 	Encryption::SecByteBlock _iv = Encryption::convert_to_bytes(iv);
 
+	//if box exists, read entire file and try to decrypt it
 	if (fs::exists(dir))
 	{
 		ifstream file(dir, ios::binary);
@@ -171,6 +177,7 @@ void CommandProcessor::open_box(const string& dir, const string& key, const stri
 }
 void CommandProcessor::open_box(const string& dir, const string& key_iv_file)
 {
+	//this method is just like previous, but it read key and iv from file
 	if (fs::exists(dir))
 	{
 		ifstream key_iv(key_iv_file);
@@ -213,6 +220,7 @@ vector<string> CommandProcessor::slice(const vector<string>& vec, size_t beg, si
 }
 void CommandProcessor::make_directory(const string& dir_name, const vector<string>& files)
 {
+	//make directory and optionally add files
 	box[dir_name] = nullptr;
 
 	auto _files = parse_files_names(dir_name,files);
@@ -239,9 +247,17 @@ void CommandProcessor::save()
 }
 vector<pair<string, string>> CommandProcessor::parse_files_names(const string& dir,const vector<string>& files)
 {
+	/*
+		there are two way to express files:
+		1)name:dir
+		2)dir
+		
+		if name is omitted, then it will have numeric name
+	*/
+
 	vector<pair<string, string>> result;
 
-	int counter = get_max_el_number(dir);
+	int counter = get_max_el_number(dir);//get max numeric name of file in the directory
 	for (auto& f : files)
 	{
 		auto sep_pos = f.find(":");
@@ -263,6 +279,8 @@ vector<pair<string, string>> CommandProcessor::parse_files_names(const string& d
 }
 int CommandProcessor::get_max_el_number(const string& dir)
 {
+	//if it has no file max numeric name will be 0
+	//so if it has, then name will be max name + 1
 	int max = -1;
 	auto is_digit = [&](const string& str)
 	{
