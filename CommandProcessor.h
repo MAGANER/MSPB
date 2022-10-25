@@ -42,6 +42,8 @@ private:
 	vector<string> slice(const vector<string>& vec, size_t beg,size_t end);
 	vector<pair<string, string>> parse_files_names(const string& dir,const vector<string>& files);
 	void load_file_to_dir(const string& dir,const  pair<string, string> &name_dir);
+	void remove(const string& dir, const vector<string>& args);
+	void extract_entire_directory(const string& inner_dir, const string& outer_dir);
 
 	string GetStreamAsString(const istream& in);
 	string GetFileAsString(const string& filePath);

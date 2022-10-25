@@ -81,6 +81,31 @@ CommandProcessor::CommandProcessor()
 		}
 		else SAY_TO_OPEN_BOX
 	};
+	commands["rm"] = [&](const vector<string>& args)
+	{
+		if (!curr_box.empty())
+		{
+			if (args.size() < 2)
+			{
+				cout << "not enough arguments!";
+			}
+			else
+			{
+				remove(args[0], slice(args, 1, args.size()));
+				cout << "files are removed!";
+			}
+		}
+		else SAY_TO_OPEN_BOX
+	};
+	commands["extd"] = [&](const vector<string>& args)
+	{
+		if (!curr_box.empty())
+		{
+			if (check_arg_number(args, 2))
+				extract_entire_directory(args[0], args[1]);
+		}
+		else SAY_TO_OPEN_BOX
+	};
 }
 CommandProcessor::~CommandProcessor()
 {
@@ -364,4 +389,36 @@ string CommandProcessor::GetFileAsString(const string& filePath)
 	}
 
 	return GetStreamAsString(stream);
+}
+void CommandProcessor::remove(const string& dir, const vector<string>& args)
+{
+	for (auto &el : box[dir].items())
+	{
+		if (find(args.begin(), args.end(), string(el.key())) != args.end())
+			box[dir].erase(el.key());
+	}
+}
+void CommandProcessor::extract_entire_directory(const string& inner_dir, const string& outer_dir)
+{
+	if (!fs::exists(outer_dir))
+	{
+		fs::create_directory(outer_dir);
+	}
+
+	if (box.find(inner_dir) != box.end())
+	{
+		for (auto& el : box[inner_dir].items())
+		{
+			map<string, string> d = el.value();
+			auto content = (*d.begin()).first;
+			auto extension = (*d.begin()).second;
+			ofstream file(outer_dir + "/"+el.key()+extension, ios::binary);
+			file << content;
+			file.close();
+		}
+	}
+	else
+	{
+		cout << "box doesn't have " << inner_dir << " as inner directory!";
+	}
 }
