@@ -233,7 +233,6 @@ void CommandProcessor::save()
 	auto iv_converted = Encryption::convert_to_bytes(iv);
 
 	ofstream data(curr_box, ios::binary);
-	cout << box.dump() << endl;
 	string encrypted = Encryption::encrypt(make_pair(key_converted, iv_converted), box.dump().c_str());
 	data << encrypted;
 	data.close();
@@ -306,14 +305,14 @@ void CommandProcessor::show_dir_content(const string& dir_name)
 {
 	auto ext = [&](const string& extension) 
 	{
-		return extension.empty() ? "none" : extension;
+		return extension.empty() ? "no extension" : extension;
 	};
 	for (auto& f : box[dir_name].items())
 	{
 		map<string, string> data = f.value();
 		for (auto& el : data)
 		{
-			cout << f.key() << " : " << el.second.c_str() << endl;
+			cout << f.key() << " : " << ext(el.second.c_str()) << endl;
 		}
 	}
 }
