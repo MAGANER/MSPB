@@ -36,8 +36,10 @@ private:
 	void show_dir_content(const string& dir_name);
 
 	bool check_arg_number(const vector<string>& args, int right_number);
+	bool does_dir_exist(const string& name);
+	int get_max_el_number(const string& dir);
 	vector<string> slice(const vector<string>& vec, size_t beg,size_t end);
-	vector<pair<string, string>> parse_files_names(const vector<string>& files);
+	vector<pair<string, string>> parse_files_names(const string& dir,const vector<string>& files);
 	void load_file_to_dir(const string& dir,const  pair<string, string> &name_dir);
 
 	string GetStreamAsString(const istream& in);

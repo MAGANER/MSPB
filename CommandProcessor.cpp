@@ -40,23 +40,45 @@ CommandProcessor::CommandProcessor()
 	};
 	commands["sdc"] = [&](const vector<string>& args)
 	{
-		if (!args.empty())
+		if (!curr_box.empty())
 		{
-			for (auto& arg : args)
+			if (!args.empty())
 			{
-				if (box.find(arg) != box.end())
+				for (auto& arg : args)
 				{
-					cout << "Content of " << arg << endl;
-					show_dir_content(arg);
-					cout << "-----------";
-					cout << endl;
+					if (box.find(arg) != box.end())
+					{
+						cout << "Content of " << arg << endl;
+						show_dir_content(arg);
+						cout << "-----------";
+						cout << endl;
+					}
 				}
 			}
+			else
+			{
+				cout << "error:no arguments!" << endl;
+			}
 		}
-		else
+		else SAY_TO_OPEN_BOX
+	};
+	commands["add"] = [&](const vector<string>& args)
+	{
+		if (!curr_box.empty())
 		{
-			cout << "error:no arguments!" << endl;
+			auto dir = args[0];
+			auto files = slice(args, 1, args.size());
+			if (does_dir_exist(dir))
+			{
+				auto parsed = parse_files_names(dir,files);
+				for (auto& f : parsed)load_file_to_dir(dir, f);
+			}
+			else
+			{
+				cout << dir << " doesn't exist inside box!";
+			}
 		}
+		else SAY_TO_OPEN_BOX
 	};
 }
 CommandProcessor::~CommandProcessor()
@@ -142,6 +164,10 @@ void CommandProcessor::open_box(const string& dir, const string& key, const stri
 		curr_box = dir;
 		box = json::parse(decrypted_box);
 	}
+	else
+	{
+		cout << dir << "doesn't exist!" << endl;
+	}
 }
 void CommandProcessor::open_box(const string& dir, const string& key_iv_file)
 {
@@ -189,7 +215,7 @@ void CommandProcessor::make_directory(const string& dir_name, const vector<strin
 {
 	box[dir_name] = nullptr;
 
-	auto _files = parse_files_names(files);
+	auto _files = parse_files_names(dir_name,files);
 	for (auto& f : _files)
 	{
 		load_file_to_dir(dir_name, f);
@@ -212,11 +238,11 @@ void CommandProcessor::save()
 	data << encrypted;
 	data.close();
 }
-vector<pair<string, string>> CommandProcessor::parse_files_names(const vector<string>& files)
+vector<pair<string, string>> CommandProcessor::parse_files_names(const string& dir,const vector<string>& files)
 {
 	vector<pair<string, string>> result;
 
-	int counter = 0;
+	int counter = get_max_el_number(dir);
 	for (auto& f : files)
 	{
 		auto sep_pos = f.find(":");
@@ -236,18 +262,69 @@ vector<pair<string, string>> CommandProcessor::parse_files_names(const vector<st
 	}
 	return result;
 }
+int CommandProcessor::get_max_el_number(const string& dir)
+{
+	int max = -1;
+	auto is_digit = [&](const string& str)
+	{
+		for (auto& ch : str)
+		{
+			if (!isdigit(ch))return false;
+		}
+		return true;
+	};
+	for (auto& el : box[dir].items())
+	{
+		auto key = string(el.key().c_str());
+		if (is_digit(key.c_str()))
+		{
+			auto digit_key = atoi(key.c_str());
+			if (digit_key > max)max = digit_key;
+		}
+	}
+	return max+1;
+}
 void CommandProcessor::load_file_to_dir(const string& dir, const  pair<string, string>& name_dir)
 {
-	box[dir][name_dir.first] = GetFileAsString(name_dir.second);
+	map<string, string> data = { {GetFileAsString(name_dir.second), fs::path(name_dir.second).extension().string() } };
+	
+	if (box[dir][name_dir.first].empty())
+	{
+		json j_map(data);
+		box[dir][name_dir.first] = j_map;
+	}
+	else
+	{
+		map<string, string> _data = box[dir][name_dir.first];
+		_data[GetFileAsString(name_dir.second)] = fs::path(name_dir.second).extension().string();
+		json j_map(_data);
+		box[dir][name_dir.first] = j_map;
+
+	}
 }
 void CommandProcessor::show_dir_content(const string& dir_name)
 {
+	auto ext = [&](const string& extension) 
+	{
+		return extension.empty() ? "none" : extension;
+	};
 	for (auto& f : box[dir_name].items())
 	{
-		cout << f.key() << endl;
+		map<string, string> data = f.value();
+		for (auto& el : data)
+		{
+			cout << f.key() << " : " << el.second.c_str() << endl;
+		}
 	}
 }
-
+bool CommandProcessor::does_dir_exist(const string& name)
+{
+	for (auto& i : box.items())
+	{
+		if (i.key() == name) return true;
+	}
+	return false;
+}
 string CommandProcessor::GetStreamAsString(const istream& in)
 {
 	stringstream out;
