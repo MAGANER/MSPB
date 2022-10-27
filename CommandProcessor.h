@@ -44,6 +44,8 @@ private:
 	void load_file_to_dir(const string& dir,const  pair<string, string> &name_dir);
 	void remove(const string& dir, const vector<string>& args);
 	void extract_entire_directory(const string& inner_dir, const string& outer_dir);
+	void extract_choosen_files(const string& inner_dir, const string& outer_dir,
+							   const vector<string>& files);
 
 	string GetStreamAsString(const istream& in);
 	string GetFileAsString(const string& filePath);

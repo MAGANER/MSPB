@@ -106,6 +106,31 @@ CommandProcessor::CommandProcessor()
 		}
 		else SAY_TO_OPEN_BOX
 	};
+	commands["extf"] = [&](const vector<string>& args)
+	{
+		if (!curr_box.empty())
+		{
+			if (args.size() > 3)
+			{
+				auto inner_directory = args[0];
+				if (does_dir_exist(inner_directory))
+				{
+					auto outer_directory = args[1];
+					auto files = slice(args, 2, args.size());
+					extract_choosen_files(inner_directory, outer_directory, files);
+				}
+				else
+				{
+					cout << inner_directory + " doesn't exist!";
+				}
+			}
+			else
+			{
+				cout << "not enough arguments!";
+			}
+		}
+		else SAY_TO_OPEN_BOX
+	};
 }
 CommandProcessor::~CommandProcessor()
 {
@@ -415,6 +440,36 @@ void CommandProcessor::extract_entire_directory(const string& inner_dir, const s
 			ofstream file(outer_dir + "/"+el.key()+extension, ios::binary);
 			file << content;
 			file.close();
+		}
+	}
+	else
+	{
+		cout << "box doesn't have " << inner_dir << " as inner directory!";
+	}
+}
+void CommandProcessor::extract_choosen_files(const string& inner_dir, const string& outer_dir,
+											 const vector<string>& files)
+{
+	if (!fs::exists(outer_dir))
+	{
+		fs::create_directory(outer_dir);
+	}
+	cout << files[0] << endl;
+
+	if (box.find(inner_dir) != box.end())
+	{
+		for (auto& el : box[inner_dir].items())
+		{
+			if (find(files.begin(), files.end(), el.key()) != files.end())
+			{
+				map<string, string> d = el.value();
+				auto content = (*d.begin()).first;
+				auto extension = (*d.begin()).second;
+				ofstream file(outer_dir + "/" + el.key() + extension, ios::binary);
+				file << content;
+				file.close();
+				cout << el.key() + extension + " is extracted!" << endl;
+			}
 		}
 	}
 	else
