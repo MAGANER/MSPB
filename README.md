@@ -32,3 +32,12 @@ Example:```>>>>add dir file1 ... filen```<br>
 Example:```>>>>sdc dir1 ... dirn```<br>
 
 ```ls``` - show list of existing directories.<br>
+
+```rm``` - removes files from directory.<br>
+Example:```>>>>rm dir file1 ... filen```<br>
+
+```extd``` - extract inner MSPB directory to outer directory.<br>
+Example:```>>>>extd inner_dir outer_dir```
+
+```extf``` - extract choosen files from inner MSPB directory to outer directory.<br>
+Example:```>>>>extd inner_dir outer_dir file1 ... filen```
